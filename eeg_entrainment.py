@@ -1,30 +1,34 @@
 #!/usr/bin/env python3
 """
-Q1: Does listening to a song entrain your brain?
+Neurosonics — EEG Entrainment Analysis
 
 Compares resting-state EEG (baseline) against EEG recorded while listening
 to a song, and checks whether the brain's band-power shifts mirror the
 song's own amplitude-envelope fingerprint (neural entrainment).
 
-Usage:
-    python eeg_q1_analysis.py \\
-        --song-csv  song_fingerprint.csv \\
-        --baseline  baseline.csv \\
-        --listening listening.csv
+Workflow:
+    Step 1 — brainwave_analysis.py  →  song_fingerprint.csv  (run once per song)
+    Step 2 — Record EEG             →  baseline_user1.csv, listening_user1.csv
+    Step 3 — eeg_entrainment.py     →  entrainment plot
 
-    # song_fingerprint.csv is produced by brainwave_analysis.py
-    # Alternatively, pass --song <YouTube URL> to download on the fly.
+Usage:
+    python eeg_entrainment.py \\
+        --song-csv  song_fingerprint.csv \\
+        --baseline  baseline_user1.csv \\
+        --listening listening_user1.csv
+
+    # Alternatively, pass --song <YouTube URL> to skip the CSV and download on the fly.
 
     # Optional flags:
-    --sr        250          # OpenBCI sample rate (250 or 125 Hz)
-    --window    2.0          # sliding-window size in seconds for band power
-    --channel   all          # 'all' to average, or 0-indexed channel number
-    --out       q1_result.png
+    --sr        250                  # OpenBCI sample rate (250 or 125 Hz)
+    --window    2.0                  # sliding-window size in seconds
+    --channel   all                  # 'all' to average, or 0-indexed channel number
+    --out       entrainment_result.png
 
 IMPORTANT — recording protocol:
-    baseline.csv  : EEG recorded during silence (2 min recommended).
-    listening.csv : EEG recorded starting exactly when the song starts,
-                    ending when the song ends. Trim in OpenBCI GUI if needed.
+    baseline_userN.csv  : EEG recorded during silence (2 min recommended).
+    listening_userN.csv : EEG recorded starting exactly when the song starts,
+                          ending when the song ends. Trim in OpenBCI GUI if needed.
 
 Dependencies:
     pip install yt-dlp librosa scipy matplotlib numpy
