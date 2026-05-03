@@ -20,7 +20,7 @@ Usage:
     # Alternatively, pass --song <YouTube URL> to skip the CSV and download on the fly.
 
     # Optional flags:
-    --sr        250                  # OpenBCI sample rate (250 or 125 Hz)
+    --sr        125                  # OpenBCI sample rate (Cyton-Daisy = 125 Hz)
     --window    2.0                  # sliding-window size in seconds
     --channel   all                  # 'all' to average, or 0-indexed channel number
     --out       entrainment_result.png
@@ -419,7 +419,7 @@ def parse_args():
     song_src.add_argument("--song",                      help="YouTube URL (downloads on the fly)")
     p.add_argument("--baseline",  required=True, help="OpenBCI CSV — resting/silence recording")
     p.add_argument("--listening", required=True, help="OpenBCI CSV — recorded while listening")
-    p.add_argument("--sr",        type=int,   default=250,       help="EEG sample rate (Hz)")
+    p.add_argument("--sr",        type=int,   default=125,       help="EEG sample rate (Hz) — Cyton-Daisy default is 125")
     p.add_argument("--window",    type=float, default=2.0,       help="Sliding window size (s)")
     p.add_argument("--channel",   default="all",                 help="Channel index or 'all'")
     p.add_argument("--out",       default="q1_result.png",       help="Output filename")

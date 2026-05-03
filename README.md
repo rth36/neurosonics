@@ -138,7 +138,7 @@ Name files consistently — `baseline_user1.csv`, `listening_user1.csv`, etc. �
 
 ## Hardware
 
-- [OpenBCI Cyton](https://openbci.com/cyton) (8-channel, 250 Hz) or Ganglion (4-channel, 125 Hz)
+- [OpenBCI Cyton+Daisy](https://openbci.com/cyton) — 16-channel, 125 Hz
 - Standard 10-20 electrode placement
 
 ---
