@@ -8,9 +8,12 @@ song's own amplitude-envelope fingerprint (neural entrainment).
 
 Usage:
     python eeg_q1_analysis.py \\
-        --song      "https://www.youtube.com/watch?v=XXXX" \\
+        --song-csv  song_fingerprint.csv \\
         --baseline  baseline.csv \\
         --listening listening.csv
+
+    # song_fingerprint.csv is produced by brainwave_analysis.py
+    # Alternatively, pass --song <YouTube URL> to download on the fly.
 
     # Optional flags:
     --sr        250          # OpenBCI sample rate (250 or 125 Hz)
@@ -20,7 +23,6 @@ Usage:
 
 IMPORTANT — recording protocol:
     baseline.csv  : EEG recorded during silence (2 min recommended).
-                    Start/stop timestamps don't matter; the full file is used.
     listening.csv : EEG recorded starting exactly when the song starts,
                     ending when the song ends. Trim in OpenBCI GUI if needed.
 
@@ -29,6 +31,7 @@ Dependencies:
 """
 
 import argparse
+import csv
 import glob
 import subprocess
 import tempfile
@@ -159,6 +162,23 @@ def band_power_timeseries(
 
 # ── Song fingerprint ──────────────────────────────────────────────────────────
 
+def load_song_csv(path: str) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    """
+    Load a song_fingerprint.csv produced by brainwave_analysis.py.
+    Returns {band_name: (times_array, power_array)}.
+    """
+    times = []
+    band_cols: dict[str, list] = {b: [] for b in BANDS}
+    with open(path, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            times.append(float(row["time_sec"]))
+            for b in BANDS:
+                band_cols[b].append(float(row[b]))
+    t = np.array(times)
+    return {b: (t, np.array(band_cols[b])) for b in BANDS}
+
+
 def download_audio(url: str, out_dir: str) -> str:
     out_template = os.path.join(out_dir, "audio.%(ext)s")
     subprocess.run(
@@ -270,14 +290,20 @@ def run(args):
         listen_ts[band] = (times, bp)
 
     # ── Song fingerprint ─────────────────────────────────────────────────────
-    print("Downloading song and computing fingerprint …")
-    song_ts = {}
-    for band, (low, high, _) in BANDS.items():
-        t, bp, song_dur = song_band_timeseries(
-            args.song, low, high, window_sec, step_sec, listen_duration
-        )
-        song_ts[band] = (t, bp)
-    print(f"  Song duration: {song_dur:.1f} s")
+    if args.song_csv:
+        print(f"Loading song fingerprint from CSV: {args.song_csv} …")
+        song_ts = load_song_csv(args.song_csv)
+        song_label = args.song_csv
+    else:
+        print("Downloading song and computing fingerprint …")
+        song_ts = {}
+        for band, (low, high, _) in BANDS.items():
+            t, bp, song_dur = song_band_timeseries(
+                args.song, low, high, window_sec, step_sec, listen_duration
+            )
+            song_ts[band] = (t, bp)
+        print(f"  Song duration: {song_dur:.1f} s")
+        song_label = args.song
 
     # ── Build figure ─────────────────────────────────────────────────────────
     n_bands = len(BANDS)
@@ -362,7 +388,7 @@ def run(args):
     ax_sum.legend(loc="upper right", fontsize=8)
 
     fig.suptitle(
-        f"Q1: Neural Entrainment Analysis\nSong: {args.song}",
+        f"Q1: Neural Entrainment Analysis\nSong: {song_label}",
         fontsize=11, y=1.03,
     )
 
@@ -384,13 +410,15 @@ def run(args):
 
 def parse_args():
     p = argparse.ArgumentParser(description="EEG Q1 — Neural entrainment analysis")
-    p.add_argument("--song",      required=True,  help="YouTube URL of the song")
-    p.add_argument("--baseline",  required=True,  help="OpenBCI CSV — resting/silence recording")
-    p.add_argument("--listening", required=True,  help="OpenBCI CSV — recorded while listening")
-    p.add_argument("--sr",        type=int,   default=250,         help="EEG sample rate (Hz)")
-    p.add_argument("--window",    type=float, default=2.0,         help="Sliding window size (s)")
-    p.add_argument("--channel",   default="all",                   help="Channel index or 'all'")
-    p.add_argument("--out",       default="q1_result.png",         help="Output filename")
+    song_src = p.add_mutually_exclusive_group(required=True)
+    song_src.add_argument("--song-csv", dest="song_csv", help="song_fingerprint.csv from brainwave_analysis.py")
+    song_src.add_argument("--song",                      help="YouTube URL (downloads on the fly)")
+    p.add_argument("--baseline",  required=True, help="OpenBCI CSV — resting/silence recording")
+    p.add_argument("--listening", required=True, help="OpenBCI CSV — recorded while listening")
+    p.add_argument("--sr",        type=int,   default=250,       help="EEG sample rate (Hz)")
+    p.add_argument("--window",    type=float, default=2.0,       help="Sliding window size (s)")
+    p.add_argument("--channel",   default="all",                 help="Channel index or 'all'")
+    p.add_argument("--out",       default="q1_result.png",       help="Output filename")
     return p.parse_args()
 
 
